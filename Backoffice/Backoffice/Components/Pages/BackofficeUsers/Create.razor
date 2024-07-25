@@ -1,0 +1,172 @@
+﻿@page "/backoffice-users/create"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Backoffice.Data
+@using Microsoft.EntityFrameworkCore
+
+@rendermode InteractiveServer
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+
+<AuthorizeView Context="authContext" Roles="Admin">
+    <Authorized>
+
+        <section class="backoffice-create">
+
+            <div class="container">
+
+                <h3>Create Backoffice User</h3>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <p class="error-flag" "status-message">@ErrorMessage</p>
+                }
+
+                @if (!string.IsNullOrEmpty(SuccessMessage))
+                {
+                    <p class="success-flag status-message">@SuccessMessage</p>
+                }
+
+                <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="create-user" novalidate id="backoffice-create-user-form" class="create-form" >
+                    <DataAnnotationsValidator />
+
+                    <div class="input-div first-name-input" id="backoffice-create-user-form-first-name">
+                        <label for=Input.FirstName>First name</label>
+                        <InputText @bind-Value="Input.FirstName" />
+                        <ValidationMessage For="() => Input.FirstName" />
+                    </div>
+
+                    <div class="input-div last-name-input" id="backoffice-create-user-form-last-name">
+                        <label for=Input.LastName>Last name</label>
+                        <InputText @bind-Value="Input.LastName" />
+                        <ValidationMessage For="() => Input.LastName" />
+                    </div>
+
+                    <div class="input-div email-input" id="backoffice-create-user-form-email">
+                        <label for=Input.Email>Email</label>
+                        <InputText @bind-Value="Input.Email" />
+                        <ValidationMessage For="() => Input.Email" />
+                    </div>
+
+                    <div class="input-div password-input" id="backoffice-create-user-form-password">
+                        <label for=Input.Password>Password</label>
+                        <InputText @bind-Value="Input.Password" type="password" />
+                        <ValidationMessage For="() => Input.Password" />
+                    </div>
+
+                    <div class="input-div password-confirm-input" id="backoffice-create-user-form-password-confirm">
+                        <label for=Input.ConfirmPassword>Confirm Password</label>
+                        <InputText @bind-Value="Input.ConfirmPassword" type="password" />
+                        <ValidationMessage For="() => Input.ConfirmPassword" />
+                    </div>
+
+                    <div class="input-div role-input" id="backoffice-create-user-form-role">
+                        <label for=Input.Role>Role</label>
+                        <InputSelect @bind-Value="Input.Role">
+                            <option value="Admin">Admin</option>
+                            <option value="SuperUser">Super user</option>
+                            <option value="ContentCreator">Content creator</option>
+                        </InputSelect>
+                        <ValidationMessage For="() => Input.Role" />
+
+                    </div>
+
+                    <button class="btn-theme" type="submit">Create user</button>
+
+                </EditForm>
+
+            </div>
+
+        </section>
+    </Authorized>
+
+    <NotAuthorized>
+        <Login />
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+
+@code {
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+        var user = new ApplicationUser
+            {
+                UserName = Input.Email,
+                Email = Input.Email,
+                FirstName = Input.FirstName,
+                LastName = Input.LastName,
+            };
+
+        if (await UserManager.Users.AnyAsync(x => x.Email == user.Email))
+        {
+            ErrorMessage = "Email is already registered";
+            return;
+        }
+
+        var result = await UserManager.CreateAsync(user, Input.Password);
+
+        if (result.Succeeded)
+        {
+            var createdUser = await UserManager.Users.FirstOrDefaultAsync(x => x.Email == Input.Email);
+            await UserManager.AddToRoleAsync(createdUser, Input.Role);
+
+            await JSRuntime.InvokeVoidAsync("alert", $"User {createdUser.FirstName} {createdUser.LastName} was created successfully!");
+            NavigationManager.NavigateTo("/backoffice-users");
+        }
+
+        if (!result.Succeeded)
+            return;
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+
+        [Required]
+        [Display(Name = "First name")]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Last name")]
+        public string LastName { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Role")]
+        public string Role { get; set; } = "";
+    }
+}

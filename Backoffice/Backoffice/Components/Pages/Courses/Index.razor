@@ -1,0 +1,31 @@
+﻿@page "/courses"
+
+<AuthorizeView Roles="Admin, SuperUser, ContentCreator">
+    <Authorized>
+        <section class="courses-dashboard home-dashboard">
+            <div class="container">
+                <h3>Courses</h3>
+
+                <div class="dashboard-grid">
+
+
+                    <a href="/courses/create" class="content-box">
+                        <p>Create new course</p>
+                    </a>
+
+                    <a href="/courses/administer" class="content-box">
+                        <p>Administer courses</p>
+                    </a>
+
+                </div>
+            </div>
+        </section>
+    </Authorized>
+    <NotAuthorized>
+        <Login />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+
+}

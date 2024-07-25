@@ -1,0 +1,47 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+
+<PageTitle>Home</PageTitle>
+
+
+<section class="home-dashboard">
+
+    <div class="container">
+
+        <div class="dashboard-grid" >
+
+            <AuthorizeView Roles="Admin">
+
+                <a href="/backoffice-users" class="content-box">
+                    <p>Backoffice Users</p>
+                </a>
+
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Admin, SuperUser">
+                
+                <a href="/website-users" class="content-box">
+                    <p>Website Users</p>
+                </a>
+
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Admin, SuperUser, ContentCreator">
+
+                <a href="/courses" class="content-box">
+                    <p>Courses</p>
+                </a>
+
+            </AuthorizeView>
+
+        </div>
+
+    </div>
+
+</section>
+
+<AuthorizeView Roles="Admin, SuperUser, ContentCreator">
+    <NotAuthorized>
+        <Login />
+    </NotAuthorized>
+</AuthorizeView>

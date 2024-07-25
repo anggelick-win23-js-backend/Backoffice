@@ -1,0 +1,141 @@
+﻿
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Backoffice.Data
+@using Microsoft.EntityFrameworkCore
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+
+<PageTitle>Sign Up</PageTitle>
+
+<section class="sign-up">
+
+    <div class="container">
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <p class="error-flag">@ErrorMessage</p>
+        }
+
+        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="signup" novalidate id="sign-up-form">
+            <DataAnnotationsValidator />
+
+            <h1>Create Account</h1>
+            <p>Already have an account?  <a href="/signin">Sign in here.</a></p>
+
+            <div class="user-name">
+                <div class="input-div first-name-input" id="sign-up-form-first-name">
+                    <label for=Input.FirstName>First name</label>
+                    <InputText @bind-Value="Input.FirstName" />
+                    <ValidationMessage For="() => Input.FirstName" />
+                </div>
+
+                <div class="input-div last-name-input" id="sign-up-form-last-name">
+                    <label for=Input.LastName>Last name</label>
+                    <InputText @bind-Value="Input.LastName" />
+                    <ValidationMessage For="() => Input.LastName" />
+                </div>
+            </div>
+
+            <div class="input-div email-input" id="sign-up-form-email">
+                <label for=Input.Email>Email</label>
+                <InputText @bind-Value="Input.Email" />
+                <ValidationMessage For="() => Input.Email" />
+            </div>
+
+            <div class="input-div password-input" id="sign-up-form-password">
+                <label for=Input.Password>Password</label>
+                <InputText @bind-Value="Input.Password" type="password" />
+                <ValidationMessage For="() => Input.Password" />
+            </div>
+
+            <div class="input-div password-confirm-input" id="sign-up-form-password-confirm">
+                <label for=Input.ConfirmPassword>Confirm Password</label>
+                <InputText @bind-Value="Input.ConfirmPassword" type="password" />
+                <ValidationMessage For="() => Input.ConfirmPassword" />
+            </div>
+
+            <button class="btn-theme" type="submit">Sign up</button>
+
+        </EditForm>
+
+    </div>
+
+</section>
+
+
+@code {
+    private string? ErrorMessage { get; set; }
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+        var user = new ApplicationUser 
+        { 
+            UserName = Input.Email,
+            Email = Input.Email,
+            FirstName = Input.FirstName,
+            LastName = Input.LastName
+        };
+
+        if(await UserManager.Users.AnyAsync(x => x.Email == user.Email))
+        {
+            ErrorMessage = "Email is already registered";
+            return;
+        }
+
+        var result = await UserManager.CreateAsync(user, Input.Password);
+
+        if (!result.Succeeded)
+            return;
+
+        Logger.LogInformation("User created a new account with password.");
+
+        if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        {
+            NavigationManager.NavigateTo($"/confirm?email={user.Email}");
+        }
+
+        await SignInManager.SignInAsync(user, isPersistent: false);
+        NavigationManager.NavigateTo(ReturnUrl ?? "/account/details");
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+
+        [Required]
+        [Display(Name = "First name")]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Last name")]
+        public string LastName { get; set; } = "";
+    }
+}

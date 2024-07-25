@@ -1,0 +1,175 @@
+﻿@page "/backoffice-users/{Id}"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Backoffice.Data
+@using Microsoft.EntityFrameworkCore
+
+@rendermode InteractiveServer
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager NavigationManager
+@inject ApplicationDbContext DataContext
+@inject IJSRuntime JSRuntime
+
+<AuthorizeView Context="authContext" Roles="Admin">
+
+    <Authorized>
+
+        <section class="backoffice-update">
+            <div class="container">
+                <h3>Update</h3>
+
+                @{
+                    if (Input == null)
+                    {
+                        <p>Loading...</p>
+                    }
+                    else
+                    {
+
+                        @if (!string.IsNullOrEmpty(ErrorMessage))
+                        {
+                            <p class="error-flag" "status-message">@ErrorMessage</p>
+                        }
+
+                        @if (!string.IsNullOrEmpty(SuccessMessage))
+                        {
+                            <p class="success-flag status-message">@SuccessMessage</p>
+                        }
+
+                        <EditForm Model="Input" method="post" OnValidSubmit="UpdateUser" FormName="update-user" novalidate id="backoffice-update-user-form" class="create-form">
+                            <DataAnnotationsValidator />
+
+                            <div class="input-div first-name-input" id="backoffice-create-user-form-first-name">
+                                <label for=Input.FirstName>First name</label>
+                                <InputText @bind-Value="Input.FirstName" />
+                                <ValidationMessage For="() => Input.FirstName" />
+                            </div>
+
+                            <div class="input-div last-name-input" id="backoffice-create-user-form-last-name">
+                                <label for=Input.LastName>Last name</label>
+                                <InputText @bind-Value="Input.LastName" />
+                                <ValidationMessage For="() => Input.LastName" />
+                            </div>
+
+                            <div class="input-div email-input" id="backoffice-create-user-form-email">
+                                <label for=Input.Email>Email</label>
+                                <InputText @bind-Value="Input.Email" readonly />
+                                <ValidationMessage For="() => Input.Email" />
+                            </div>
+
+                            <div class="input-div role-input" id="backoffice-create-user-form-role">
+                                <label for=Input.Role>Role</label>
+                                <InputSelect @bind-Value="Input.Role">
+                                    <option value="Admin">Admin</option>
+                                    <option value="SuperUser">Super user</option>
+                                    <option value="ContentCreator">Content creator</option>
+                                </InputSelect>
+                            </div>
+
+                            <button class="btn-theme" type="submit">Update user</button>
+
+                        </EditForm>
+
+                        <button class="btn-delete mt-3" @onclick="DeleteUser" type="button">Delete user</button>
+
+                    }
+                }
+            </div>
+        </section>
+        
+    </Authorized>
+
+    <NotAuthorized>
+        <Login/>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private InputModel? Input { get; set; } = new();
+
+    private ApplicationUser User { get; set; } = null!;
+    private IList<string> Roles { get; set; } = null!;
+    private string Role { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        User = await UserManager.Users.FirstOrDefaultAsync(x => x.Id == Id);
+
+        Input!.Email = User!.Email!;
+        Input.FirstName = User.FirstName;
+        Input.LastName = User.LastName;
+        Input.Role = (await UserManager.GetRolesAsync(User)).FirstOrDefault() ?? "";
+    }
+
+    private async void UpdateUser()
+    {
+        User.FirstName = Input!.FirstName;
+        User.LastName = Input.LastName;
+
+        var updateResult = await UserManager.UpdateAsync(User);
+
+        if (updateResult.Succeeded)
+        {
+            if (Input!.Role != null)
+            {
+                var userRoleToDelete = await DataContext.UserRoles.FirstOrDefaultAsync(x => x.UserId == User.Id);
+                var deleteResult = DataContext.UserRoles.Remove(userRoleToDelete!);
+                await DataContext.SaveChangesAsync();
+
+                var roleResult = await UserManager.AddToRoleAsync(User, Input.Role);
+            }
+            SuccessMessage = "User was successfully updated";
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteUser()
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete this user?");
+
+        if (confirmed)
+        {
+            var result = await UserManager.DeleteAsync(User);
+
+            if (result.Succeeded)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "User deleted successfully!");
+                NavigationManager.NavigateTo("/backoffice-users");
+            }
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [Display(Name = "First name")]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Last name")]
+        public string LastName { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Role")]
+        public string Role { get; set; } = null!;
+    }
+}

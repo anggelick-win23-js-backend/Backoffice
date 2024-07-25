@@ -1,0 +1,274 @@
+﻿@page "/website-users/{Id}"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Backoffice.Components.Models
+@using Backoffice.Components.Models.Requests
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Backoffice.Data
+@using Microsoft.EntityFrameworkCore
+@using Newtonsoft.Json
+
+@rendermode InteractiveServer
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject ApplicationDbContext DataContext
+@inject IConfiguration config
+@inject HttpClient http
+@inject IJSRuntime JSRuntime
+
+<AuthorizeView Context="authContext" Roles="Admin, SuperUser">
+
+    <Authorized>
+
+        <section class="backoffice-update">
+            <div class="container">
+                <h3>Update</h3>
+
+                @{
+                    if (Input == null)
+                    {
+                        <p>Loading...</p>
+                    }
+                    else
+                    {
+
+                        @if (!string.IsNullOrEmpty(ErrorMessage))
+                        {
+                            <p class="error-flag" "status-message">@ErrorMessage</p>
+                        }
+
+                        @if (!string.IsNullOrEmpty(SuccessMessage))
+                        {
+                            <p class="success-flag status-message">@SuccessMessage</p>
+                        }
+
+                        <EditForm Model="Input" method="post" OnValidSubmit="UpdateUser" FormName="update-user" novalidate id="backoffice-update-user-form" class="create-form">
+                            <DataAnnotationsValidator />
+
+                            <p class="h4">Profile</p>
+
+                            <div class="input-div first-name-input" id="backoffice-create-user-form-first-name">
+                                <label for=Input.FirstName>First name</label>
+                                <InputText @bind-Value="Input.FirstName" />
+                                <ValidationMessage For="() => Input.FirstName" />
+                            </div>
+
+                            <div class="input-div last-name-input" id="backoffice-create-user-form-last-name">
+                                <label for=Input.LastName>Last name</label>
+                                <InputText @bind-Value="Input.LastName" />
+                                <ValidationMessage For="() => Input.LastName" />
+                            </div>
+
+                            <div class="input-div email-input" id="backoffice-create-user-form-email">
+                                <label for=Input.Email>Email</label>
+                                <InputText @bind-Value="Input.Email" readonly />
+                                <ValidationMessage For="() => Input.Email" />
+                            </div>
+
+                            <div class="input-div phone-number-input" id="backoffice-create-user-form-phone-number">
+                                <label for=Input.PhoneNumber>Phone number</label>
+                                <InputText @bind-Value="Input.PhoneNumber"  />
+                                <ValidationMessage For="() => Input.PhoneNumber" />
+                            </div>
+
+                            <div class="input-div biography-input" id="backoffice-create-user-form-biography">
+                                <label for=Input.Biography>Biography</label>
+                                <InputText @bind-Value="Input.Biography"  />
+                                <ValidationMessage For="() => Input.Biography" />
+                            </div>
+
+                            <div class="input-div newsletter-subscriber-input" id="backoffice-create-user-form-newsletter-subscriber">
+                                <label for=Input.NewsletterSubscriber>NewsletterSubscriber</label>
+                                <InputCheckbox @bind-Value="Input.NewsletterSubscriber"  />
+                                <ValidationMessage For="() => Input.NewsletterSubscriber" />
+                            </div>
+
+                            <p class="h4 mt-5">Address</p>
+
+                            @if (!string.IsNullOrEmpty(AddressErrorMessage))
+                            {
+                                <p class="error-flag status-message">@AddressErrorMessage</p>
+                            }
+
+                            <div class="input-div">
+                                <label for="@Input.Address!.AddressLine1">Street name</label>
+                                <InputText @bind-Value="Input.Address.AddressLine1" />
+                                <ValidationMessage For="() => Input.Address.AddressLine1" />
+                            </div>
+
+                            <div class="input-div">
+                                <label for="@Input.Address.AddressLine2">c/o (optional)</label>
+                                <InputText @bind-Value="Input.Address.AddressLine2" />
+                                <ValidationMessage For="() => Input.Address.AddressLine2" />
+                            </div>
+
+                            <div class="input-div">
+                                <label for="@Input.Address.PostalCode">Postal code</label>
+                                <InputText @bind-Value="Input.Address.PostalCode" />
+                                <ValidationMessage For="() => Input.Address.PostalCode" />
+                            </div>
+
+                            <div class="input-div">
+                                <label for="@Input.Address.City">City</label>
+                                <InputText @bind-Value="Input.Address.City" />
+                                <ValidationMessage For="() => Input.Address.City" />
+                            </div>
+
+                            <button class="btn-theme" type="submit">Update user</button>
+
+                        </EditForm>
+
+                        <button class="btn-delete mt-3" @onclick="DeleteUser" type="button">Delete user</button>
+
+                    }
+                }
+            </div>
+        </section>
+        
+    </Authorized>
+
+    <NotAuthorized>
+        <Login/>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string? AddressErrorMessage { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    private bool IsAnyAddressFieldFilled()
+    {
+        return !string.IsNullOrWhiteSpace(Input.Address.AddressLine1) ||
+               !string.IsNullOrWhiteSpace(Input.Address.AddressLine2) ||
+               !string.IsNullOrWhiteSpace(Input.Address.PostalCode) ||
+               !string.IsNullOrWhiteSpace(Input.Address.City);
+    }
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private InputModel? Input { get; set; } = new();
+
+    private WebsiteUser User { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var request = new StringContent(JsonConvert.SerializeObject(new UserRetrievalRequest { Id = Id }), Encoding.UTF8, "application/json");
+        var result = await http.PostAsync(config["Api_AccountProvider_ReadOne"], request);
+        var content = await result.Content.ReadAsStringAsync();
+
+        if (content != null)
+        {
+            User = JsonConvert.DeserializeObject<WebsiteUser>(content)!;
+
+            Input!.Email = User!.Email!;
+            Input.FirstName = User.FirstName;
+            Input.LastName = User.LastName;
+            Input.PhoneNumber = User.PhoneNumber;
+            Input.NewsletterSubscriber = User.NewsletterSubscriber;
+
+            if (User.Address != null)
+            {
+                Input.Address.AddressLine1 = User.Address.AddressLine1;
+                Input.Address.AddressLine2 = User.Address.AddressLine2;
+                Input.Address.PostalCode = User.Address.PostalCode;
+                Input.Address.City = User.Address.City;
+            }
+        }
+    }
+
+    private async void UpdateUser()
+    {
+        User.FirstName = Input.FirstName;
+        User.LastName = Input.LastName;
+        User.Email = Input.Email;
+        User.Biography = Input.Biography;
+        User.PhoneNumber = Input.PhoneNumber;
+
+        if (!string.IsNullOrWhiteSpace(Input.Address.AddressLine1) && !string.IsNullOrWhiteSpace(Input.Address.PostalCode) && !string.IsNullOrWhiteSpace(Input.Address.City))
+        {
+            User.Address = new WebsiteUserAddressModel
+            {
+                AddressLine1 = Input.Address.AddressLine1,
+                AddressLine2 = Input.Address.AddressLine2,
+                PostalCode = Input.Address.PostalCode,
+                City = Input.Address.City,
+            };
+
+            AddressErrorMessage = null;
+        }
+        else if (IsAnyAddressFieldFilled())
+        {
+            AddressErrorMessage = "No address was created, you must enter Street name, Postal Code and City for the address to be valid.";
+        }
+
+        if (User.NewsletterSubscriber != Input.NewsletterSubscriber)
+            User.NewsletterSubscriber = Input.NewsletterSubscriber;
+
+        var httpContent = new StringContent(JsonConvert.SerializeObject(User), Encoding.UTF8, "application/json");
+        var result = await http.PostAsync(config["Api_AccountProvider_Update"], httpContent);
+
+        if (result.IsSuccessStatusCode)
+        {
+            if (User.NewsletterSubscriber)
+            {
+                var newsletterResult = await http.PostAsync(config["Api_NewsletterProvider_Create"], httpContent);
+            }
+
+            await JSRuntime.InvokeVoidAsync("alert", "User was updated successfully!");
+        }
+    }
+
+    private async Task DeleteUser()
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete this user?");
+
+        if (confirmed)
+        {
+            var httpContent = new StringContent(JsonConvert.SerializeObject(User), Encoding.UTF8, "application/json");
+            var result = await http.PostAsync(config["Api_AccountProvider_Delete"], httpContent);
+
+            if (result.IsSuccessStatusCode)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "User was successfully deleted.");
+                NavigationManager.NavigateTo("/website-users");
+            }
+
+            await JSRuntime.InvokeVoidAsync("alert", "There was an error, user has not been deleted.");
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        public string LastName { get; set; } = "";
+
+        public string? Biography { get; set; }
+
+        public string? PhoneNumber { get; set; }
+
+        [Required]
+        public string Email { get; set; } = "";
+
+        public bool NewsletterSubscriber { get; set; }
+
+        public AddressModel Address { get; set; } = new AddressModel();
+    }
+    private sealed class AddressModel
+    {
+        public string? AddressLine1 { get; set; }
+        public string? AddressLine2 { get; set; }
+        public string? PostalCode { get; set; }
+        public string? City { get; set; }
+    }
+}

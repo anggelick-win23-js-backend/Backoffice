@@ -1,0 +1,59 @@
+﻿
+@using System.ComponentModel.DataAnnotations
+@using Backoffice.Components.Models
+@using Newtonsoft.Json
+
+@rendermode InteractiveServer
+
+@inject HttpClient http
+
+<h3>Upload</h3>
+
+<EditForm Model="FileUploadForm" FormName="uploadFile" enctype="multipart/form-data" OnValidSubmit="HandleSubmit">
+
+    <InputFile OnChange="HandleSelectedFile" accept="image/*" name="file" />
+
+    <button type="submit">Upload</button>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    private FileUploadModel FileUploadForm { get; set; } = new();
+
+    private IBrowserFile? SelectedFile { get; set; }
+
+    public string? ImgUrl { get; set; }
+
+
+    public async Task HandleSubmit()
+    {
+        var content = new MultipartFormDataContent();
+
+        var fileContent = new StreamContent(SelectedFile!.OpenReadStream(SelectedFile.Size));
+
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(SelectedFile.ContentType);
+
+        content.Add(fileContent, "file", SelectedFile.Name);
+
+        var response = await http.PostAsync("http://localhost:7267/api/Upload", content);
+
+        var unpacked = await response.Content.ReadAsStringAsync();
+
+        var jsonUnpacked = JsonConvert.DeserializeObject<FileUploadResponseModel>(unpacked);
+
+        ImgUrl = jsonUnpacked.FilePath;
+    }
+
+    public async Task HandleSelectedFile(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+
+        FileUploadForm.File = SelectedFile;
+    }
+
+    public class FileUploadModel
+    {
+        [Required]
+        public IBrowserFile? File { get; set; }
+    }
+}

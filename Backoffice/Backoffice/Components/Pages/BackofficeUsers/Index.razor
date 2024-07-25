@@ -1,0 +1,32 @@
+﻿@page "/backoffice-users"
+
+
+<AuthorizeView Roles="Admin, SuperUser, ContentCreator">
+    <Authorized>
+        <section class="backoffice-users-dashboard home-dashboard">
+            <div class="container">
+                <h3>Backoffice Users</h3>
+
+                <div class="dashboard-grid">
+
+
+                    <a href="/backoffice-users/create" class="content-box">
+                        <p>Create new user</p>
+                    </a>
+
+                    <a href="/backoffice-users/administer" class="content-box">
+                        <p>Administer users</p>
+                    </a>
+
+                </div>
+            </div>
+        </section>
+    </Authorized>
+    <NotAuthorized>
+        <Login />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+
+}

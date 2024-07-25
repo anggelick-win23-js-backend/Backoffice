@@ -1,0 +1,107 @@
+﻿@page "/website-users"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Backoffice.Components.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Backoffice.Data
+@using Microsoft.EntityFrameworkCore
+@using Newtonsoft.Json
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject HttpClient http
+@inject IConfiguration config
+
+
+
+<AuthorizeView Context="authContext" Roles="Admin">
+    <Authorized>
+
+        <section class="backoffice-create">
+
+            <div class="container">
+
+                <h3>Website Users</h3>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <p class="error-flag" "status-message">@ErrorMessage</p>
+                }
+
+                @if (!string.IsNullOrEmpty(SuccessMessage))
+                {
+                    <p class="success-flag status-message">@SuccessMessage</p>
+                }
+
+                @foreach (var user in Users)
+                {
+                    <a href="@($"website-users/{user.Id}")">@user.FirstName @user.LastName</a>
+                }
+
+            </div>
+
+        </section>
+    </Authorized>
+
+    <NotAuthorized>
+        <Login />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    List<WebsiteUser> Users { get; set; } = new List<WebsiteUser>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await http.GetAsync(config["Api_AccountProvider_ReadAll"]);
+        var content = await result.Content.ReadAsStringAsync();
+
+        Users = JsonConvert.DeserializeObject<List<WebsiteUser>>(content);
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+
+        [Required]
+        [Display(Name = "First name")]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Last name")]
+        public string LastName { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Role")]
+        public string Role { get; set; } = "";
+    }
+}

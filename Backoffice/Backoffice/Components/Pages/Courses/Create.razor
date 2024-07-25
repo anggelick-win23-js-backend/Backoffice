@@ -1,0 +1,267 @@
+﻿@page "/courses/create"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Backoffice.Components.Models
+@using Backoffice.Components.Models.GraphQL
+@using Backoffice.Components.Models.GraphQL.Mutations.Create
+@using Backoffice.Services
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Backoffice.Data
+@using Microsoft.EntityFrameworkCore
+@using Newtonsoft.Json
+
+@rendermode InteractiveServer
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject IConfiguration config
+@inject HttpClient http
+@inject IJSRuntime JSRuntime
+@inject CourseService _courseService
+
+
+<AuthorizeView Context="authContext" Roles="Admin, SuperUser, ContentCreator">
+    <Authorized>
+
+        <section class="backoffice-create">
+
+            <div class="container">
+
+                <h3>Create Course</h3>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <p class="error-flag" "status-message">@ErrorMessage</p>
+                }
+
+                @if (!string.IsNullOrEmpty(SuccessMessage))
+                {
+                    <p class="success-flag status-message">@SuccessMessage</p>
+                }
+
+                <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnSubmit="CreateCourse" FormName="create-course" novalidate id="backoffice-create-user-form" class="create-form" >
+                    <DataAnnotationsValidator />
+
+                    <div class="input-div" id="backoffice-create-course-form-title">
+                        <label For="Input.Name">Title</label>
+                        <InputText @bind-Value="Input.Name" />
+                        <ValidationMessage For="() => Input.Name" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-description">
+                        <label For="Input.Description">Description</label>
+                        <InputTextArea @bind-Value="Input.Description" />
+                        <ValidationMessage For="() => Input.Description" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-ingress">
+                        <label For="Input.Ingress">Ingress</label>
+                        <InputTextArea @bind-Value="Input.Ingress" />
+                        <ValidationMessage For="() => Input.Ingress" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-price">
+                        <label For="Input.Ingress">Price</label>
+                        <InputNumber @bind-Value="Input.Price" />
+                        <ValidationMessage For="() => Input.Price" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-hours-to-complete">
+                        <label For="Input.HoursToComplete">Hours to complete</label>
+                        <InputNumber @bind-Value="Input.HoursToComplete" />
+                        <ValidationMessage For="() => Input.HoursToComplete" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-likes-percentage">
+                        <label For="Input.LikesPercentage">Likes percentage</label>
+                        <InputNumber @bind-Value="Input.LikesPercentage" />
+                        <ValidationMessage For="() => Input.LikesPercentage" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-likes-amount">
+                        <label For="Input.LikesAmount">Likes amount</label>
+                        <InputNumber @bind-Value="Input.LikesAmount" />
+                        <ValidationMessage For="() => Input.LikesAmount" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-course-image-file">
+                        <label For="Input.CourseImageFile">Course image</label>
+                        <InputFile OnChange="HandleSelectedCourseImageFile" @bind-Value="Input.CourseImageFile" />
+                        <ValidationMessage For="() => Input.CourseImageFile" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-author-name">
+                        <label For="Input.AuthorName">Author name</label>
+                        <InputText @bind-Value="Input.AuthorName" />
+                        <ValidationMessage For="() => Input.AuthorName" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-author-description">
+                        <label For="Input.AuthorDescription">Author description</label>
+                        <InputTextArea @bind-Value="Input.AuthorDescription" />
+                        <ValidationMessage For="() => Input.AuthorDescription" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-author-image-file">
+                        <label For="Input.AuthorImageFile">Author image</label>
+                        <InputFile OnChange="HandleSelectedAuthorImageFile" @bind-Value="Input.AuthorImageFile" />
+                        <ValidationMessage For="() => Input.AuthorImageFile" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-author-youtube-followers-qty">
+                        <label For="Input.AuthorYoutubeFollowersQty">Author youtube followers qty</label>
+                        <InputNumber @bind-Value="Input.AuthorYoutubeFollowersQty" />
+                        <ValidationMessage For="() => Input.AuthorYoutubeFollowersQty" />
+                    </div>
+
+                    <div class="input-div" id="backoffice-create-course-form-author-facebook-followers-qty">
+                        <label For="Input.AuthorFacebookFollowersQty">Author facebook followers qty</label>
+                        <InputNumber @bind-Value="Input.AuthorFacebookFollowersQty" />
+                        <ValidationMessage For="() => Input.AuthorFacebookFollowersQty" />
+                    </div>
+
+                    <button class="btn-theme" type="submit">Create course</button>
+
+                </EditForm>
+
+            </div>
+
+        </section>
+    </Authorized>
+
+    <NotAuthorized>
+        <Login />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private IBrowserFile? SelectedFile { get; set; }
+
+
+    public async Task CreateCourse(EditContext editContext)
+    {
+        Input.CourseImage = await _courseService.GetImageUrlAsync(Input.CourseImageFile, "courses", http, config);
+        Input.AuthorImage = await _courseService.GetImageUrlAsync(Input.AuthorImageFile, "authors", http, config);
+            
+        var query = new GraphQLMutationCreate
+        {
+            query = "mutation ($input: CourseCreateRequestInput!) { createCourse(input: $input) { id name } }",
+            variables = new CreateVariables
+            {
+                input = new CreateCourseModel
+                {
+                    name = Input.Name,
+                    description = Input.Description,
+                    ingress = Input.Ingress,
+                    price = Input.Price,
+                    hoursToComplete = Input.HoursToComplete,
+                    likesPercentage = Input.LikesPercentage,
+                    likesAmount = Input.LikesAmount,
+                    image = Input.CourseImage,
+                    authorName = Input.AuthorName,
+                    authorDescription = Input.AuthorDescription,
+                    authorImage = Input.AuthorImage,
+                    authorYoutubeFollowersQty = Input.AuthorYoutubeFollowersQty,
+                    authorFacebookFollowersQty = Input.AuthorFacebookFollowersQty
+                }
+            }
+        };
+
+        var response = await http.PostAsJsonAsync(config["Api_CourseProvider_GraphQL"], query);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Course was created successfully!");
+            NavigationManager.NavigateTo("/courses");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Something went wrong, course was not created.");
+        }
+    }
+
+    public async Task HandleSelectedCourseImageFile(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+        Input.CourseImageFile = SelectedFile;
+    }
+
+    public async Task HandleSelectedAuthorImageFile(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+        Input.AuthorImageFile = SelectedFile;
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [Display(Name = "Name")]
+        public string Name { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Description")]
+        public string Description { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Ingress")]
+        public string Ingress { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Price")]
+        public decimal Price { get; set; }
+
+        [Required]
+        [Display(Name = "Hours to complete")]
+        public int HoursToComplete { get; set; }
+
+        [Required]
+        [Display(Name = "Likes percentage")]
+        public int LikesPercentage { get; set; }
+
+        [Required]
+        [Display(Name = "Likes amount")]
+        public int LikesAmount { get; set; }
+
+        public IBrowserFile CourseImageFile { get; set; }
+
+        public IBrowserFile AuthorImageFile { get; set; }
+
+        [Display(Name = "Image URL")]
+        public string CourseImage { get; set; } = null!;
+
+        [Required]
+        [Display(Name = "Author name")]
+        public string AuthorName { get; set; } = null!;
+
+        [Required]
+        [Display(Name = "Author Description")]
+        public string AuthorDescription { get; set; } = null!;
+
+        [Required]
+        [Display(Name = "Author image URL")]
+        public string AuthorImage { get; set; } = null!;
+
+        [Required]
+        [Display(Name = "Author youtube followers qty")]
+        public int AuthorYoutubeFollowersQty { get; set; }
+
+        [Required]
+        [Display(Name = "Author facebook followers qty")]
+        public int AuthorFacebookFollowersQty { get; set; }
+    }
+}

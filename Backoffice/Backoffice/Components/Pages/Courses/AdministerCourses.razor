@@ -1,0 +1,148 @@
+﻿@page "/courses/administer"
+
+@using Backoffice.Components.Models
+@using Backoffice.Components.Models.GraphQL
+@using Backoffice.Components.Pages.Courses
+@using Newtonsoft.Json
+@using System.Text
+@using System.Text.Json
+
+@attribute [StreamRendering] 
+
+@inject HttpClient http
+@inject IConfiguration config
+
+@code {
+    private List<CourseModel>? courses { get; set; } = new ();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = new GraphQLQuery
+        {
+            Query = "query { GetCourses { id name description authorName price image hoursToComplete likesPercentage likesAmount } }"
+        };
+
+        try
+        {
+            var response = await http.PostAsJsonAsync(config["Api_CourseProvider_GraphQL"], query);
+
+            var responseString = await response.Content.ReadAsStringAsync();
+
+            var rootObject = JsonConvert.DeserializeObject<DynamicGraphQLResponse>(responseString);
+
+            if (rootObject!.Data!.GetCourses != null)
+            {
+                courses!.AddRange(rootObject.Data!.GetCourses!);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);            
+        }
+    }
+}
+
+<AuthorizeView Context="authContext" Roles="Admin, SuperUser, ContentCreator">
+    <Authorized>
+        <section class="courses-grid">
+            <div class="container">
+
+                <h1>Courses</h1>
+
+                @*         <form method="post" asp-action="Index" asp-controller="Courses">
+                <select asp-for="@Model.CourseCategory" class="view-filter" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                @{
+                foreach (var category in Model.Categories)
+                {
+                <option value="@category.Name" href="@Url.Action("index", new { courseCategory = category.Name } )">@category.Name</option>
+                }
+                }
+                </select>
+                </form>
+
+                <form method="post" asp-action="Index" asp-controller="Courses">
+                <div class="search-box">
+                <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <input placeholder="Search" asp-for="@Model.SearchQuery" onchange="this.form.submit()" />
+                </div>
+                </form> *@
+
+                <div class="grid">
+                    @if (courses == null || courses.Count == 0)
+                    {
+                        <div class="spinners">
+                            <div class="spinner-grow text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                            <div class="spinner-grow text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                            <div class="spinner-grow text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var course in courses)
+                        {
+                            <div class="course-box">
+
+                                <a class="content-box" href="@($"courses/administer/{course.id}")">
+
+                                    <div class="img-div">
+                                        <img src="@course.image" />
+                                    </div>
+
+                                    <div class="text">
+                                        <h2 class="title h5">@course.name</h2>
+                                        <p class="author">By @course.authorName</p>
+                                        <p class="price">$@course.price</p>
+                                    </div>
+
+                                    <div class="bottom">
+                                        <div class="item">
+                                            <p><i class="fa-regular fa-clock"></i>@course.hoursToComplete hours</p>
+                                        </div>
+                                        <div class="item">
+                                            <p><i class="fa-regular fa-thumbs-up"></i>@course.likesPercentage % (@course.likesAmount K)</p>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    }
+                </div>
+
+
+                @*         @{
+                if (Model.Pagination != null && Model.Pagination.TotalPages > 1)
+                {
+                <div class="pagination">
+                @for (int i = 1; i <= Model.Pagination.TotalPages; i++)
+                {
+                if (i == Model.Pagination.CurrentPage)
+                {
+                <span class="number active">@i</span>
+                }
+                else
+                {
+                <a class="number inactive" href="@Url.Action("index", new { pageNumber = i, pageSize = Model.Pagination.PageSize })">@i</a>
+                }
+                }
+                </div>
+                }
+                } *@
+
+
+            </div>
+        </section>
+    </Authorized>
+
+    <NotAuthorized>
+        <Login/>
+    </NotAuthorized>
+
+</AuthorizeView>
+

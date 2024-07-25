@@ -1,0 +1,112 @@
+﻿@page "/signin"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Backoffice.Data
+@using Newtonsoft.Json
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject HttpClient http
+
+<PageTitle>Log in</PageTitle>
+
+
+<AuthorizeView Context="authContext"> 
+    <Authorized>
+        <Home />
+    </Authorized>
+    <NotAuthorized>
+        <section class="sign-in">
+
+            <div class="container">
+
+                <div class="content-box">
+
+                    <h1>Welcome Back</h1>
+
+                    <p class="error-flag">@errorMessage</p>
+
+                    <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="LoginUser" FormName="signin" novalidate id="sign-in-form">
+                        <DataAnnotationsValidator />
+
+                        <div id="sign-in-form-email" class="input-div email-input">
+                            <label for=Input.Email>Email</label>
+                            <InputText @bind-Value="Input.Email" />
+                            <ValidationMessage For="() => Input.Email" />
+                        </div>
+
+                        <div id="sign-in-form-password" class="input-div password-input">
+                            <label for=Input.Password>Password</label>
+                            <InputText @bind-Value="Input.Password" type="password" />
+                            <ValidationMessage For="() => Input.Password" />
+                        </div>
+
+                        <button type="submit" class="btn-theme">Sign in</button>
+
+                    </EditForm>
+
+                    <div class="bottom">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string? errorMessage { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+    }
+
+    public async Task LoginUser()
+    {
+        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        if (result.Succeeded)
+        {
+            NavigationManager.NavigateTo(ReturnUrl ?? "/");
+        }
+        else
+        {
+            errorMessage = "Error: Invalid login attempt.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+}
