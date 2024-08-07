@@ -22,16 +22,17 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ./myapp  # Updated path
+        run: dotnet publish -c Release -o ./myapp
 
       - name: List contents of myapp directory
-        run: dir ./myapp  # List contents in Windows
+        run: dir ./myapp
+        shell: pwsh
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ./myapp  # Ensure this path is correct
+          path: ./myapp
 
   deploy:
     runs-on: windows-latest
@@ -47,7 +48,8 @@ jobs:
           name: .net-app
       
       - name: List contents of downloaded artifact
-        run: dir ./myapp  # Verify contents in the deployment job
+        run: dir ./myapp
+        shell: pwsh
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -55,5 +57,5 @@ jobs:
         with:
           app-name: 'admin-win23jsbackend-anggelick'
           slot-name: 'Production'
-          package: './myapp'  # Ensure this path matches the directory structure
+          package: './myapp'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_13D9A12F94E243F6AD678DD396B2D82F }}
