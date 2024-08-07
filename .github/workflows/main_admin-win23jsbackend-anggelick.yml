@@ -24,6 +24,10 @@ jobs:
       - name: dotnet publish
         run: dotnet publish -c Release -o ./myapp
 
+      - name: List contents of the current directory
+        run: dir
+        shell: pwsh
+
       - name: List contents of myapp directory
         run: dir ./myapp
         shell: pwsh
@@ -46,8 +50,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
-      - name: List contents of downloaded artifact
+
+      - name: List contents of the downloaded artifact
         run: dir ./myapp
         shell: pwsh
 
