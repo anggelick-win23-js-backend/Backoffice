@@ -1,0 +1,137 @@
+﻿.account-details {
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        @include lg {
+            display: grid;
+            grid-template-columns: auto 1fr;
+
+            .account-menu {
+                align-self: start;
+            }
+        }
+
+        .account-details-forms {
+            display: flex;
+            flex-direction: column;
+
+            p {
+                color: $theme;
+                font-weight: 700;
+            }
+
+            .input-div {
+                display: grid;
+                grid-template-columns: auto auto;
+                grid-template-areas: "label label" "input input" "span span";
+                align-content: start;
+
+                span {
+                    grid-area: span;
+                    text-align: start;
+                    min-height: 26px;
+                }
+
+                input, textarea {
+                    width: 80vw;
+                    grid-area: input;
+
+                    @include lg {
+                        width: 100%;
+                    }
+                }
+
+                label {
+                    grid-area: label;
+                }
+            }
+
+            form {
+                display: flex;
+                flex-direction: column;
+                column-gap: 1rem;
+
+                .buttons {
+                    display: flex;
+                    gap: 1rem;
+                }
+            }
+        }
+    }
+}
+
+#account-details-basic-info-form {
+    border-bottom: 1px solid $gray-300;
+    padding-bottom: 3rem;
+    margin-bottom: 2rem;
+
+    textarea {
+        height: 104px;
+    }
+
+    @include lg {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "firstname lastname" "email phone" "bio bio" "address address" "streetname co" "postalcode city" "buttons e";
+
+        .input-div {
+            margin-bottom: 1rem;
+
+
+            &:nth-child(2) {
+                grid-area: firstname;
+            }
+
+            &:nth-child(3) {
+                grid-area: lastname;
+            }
+
+            &:nth-child(4) {
+                grid-area: email;
+            }
+
+            &:nth-child(5) {
+                grid-area: phone;
+            }
+
+            &:nth-child(6) {
+                grid-area: bio;
+            }
+
+            &:nth-child(7) {
+                grid-area: address;
+            }
+
+            &:nth-child(8) {
+                grid-area: streetname;
+            }
+
+            &:nth-child(9) {
+                grid-area: co;
+            }
+
+            &:nth-child(10) {
+                grid-area: postalcode;
+                padding-bottom: 1rem;
+            }
+
+            &:nth-child(11) {
+                grid-area: city;
+            }
+        }
+
+        .buttons {
+            grid-area: buttons;
+        }
+    }
+}
+
+#account-details-address-form {
+    @include lg {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
