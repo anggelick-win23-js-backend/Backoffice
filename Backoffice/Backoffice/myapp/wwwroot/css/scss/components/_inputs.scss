@@ -43,10 +43,6 @@ input {
     &.input-validation-valid {
         border: 1px solid $success;
     }
-
-    &.validation-message {
-        color: $danger;
-    }
 }
 
 textarea {
@@ -59,10 +55,6 @@ textarea {
     &.input-validation-valid {
         color: $success;
         border: 1px solid $success;
-    }
-
-    &.validation-message {
-        color: $danger;
     }
 }
 

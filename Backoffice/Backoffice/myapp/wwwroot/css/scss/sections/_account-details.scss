@@ -75,51 +75,12 @@
     @include lg {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        grid-template-areas: "firstname lastname" "email phone" "bio bio" "address address" "streetname co" "postalcode city" "buttons e";
+        grid-template-areas: "firstname lastname" "email phone" "bio bio" "buttons e";
 
         .input-div {
-            margin-bottom: 1rem;
-
-
-            &:nth-child(2) {
-                grid-area: firstname;
-            }
-
-            &:nth-child(3) {
-                grid-area: lastname;
-            }
-
-            &:nth-child(4) {
-                grid-area: email;
-            }
 
             &:nth-child(5) {
-                grid-area: phone;
-            }
-
-            &:nth-child(6) {
                 grid-area: bio;
-            }
-
-            &:nth-child(7) {
-                grid-area: address;
-            }
-
-            &:nth-child(8) {
-                grid-area: streetname;
-            }
-
-            &:nth-child(9) {
-                grid-area: co;
-            }
-
-            &:nth-child(10) {
-                grid-area: postalcode;
-                padding-bottom: 1rem;
-            }
-
-            &:nth-child(11) {
-                grid-area: city;
             }
         }
 

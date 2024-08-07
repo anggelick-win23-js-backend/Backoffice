@@ -21,22 +21,22 @@ jobs:
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o ./myapp
+      - name: Publish with dotnet
+        run: dotnet publish -c Release -o ${{github.workspace}}\myapp
 
       - name: List contents of the current directory
         run: dir
         shell: pwsh
 
       - name: List contents of myapp directory
-        run: dir ./myapp
+        run: dir ${{github.workspace}}\myapp
         shell: pwsh
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ./myapp
+          path: ${{github.workspace}}\myapp
 
   deploy:
     runs-on: windows-latest
@@ -52,7 +52,7 @@ jobs:
           name: .net-app
 
       - name: List contents of the downloaded artifact
-        run: dir ./myapp
+        run: dir .\myapp
         shell: pwsh
 
       - name: Deploy to Azure Web App
@@ -61,5 +61,5 @@ jobs:
         with:
           app-name: 'admin-win23jsbackend-anggelick'
           slot-name: 'Production'
-          package: './myapp'
+          package: .\myapp
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_13D9A12F94E243F6AD678DD396B2D82F }}

@@ -6,8 +6,9 @@ header {
 
     .container {
         padding: 3rem 3rem;
-        display: grid;
-        grid-template-columns: auto auto;
+        display: flex;
+        justify-content: space-around;
+
 
         @include lg {
             grid-template-columns: auto 1fr 1fr auto;
@@ -17,13 +18,16 @@ header {
         }
 
         .navigation {
+            display: flex !important;
+            gap: 1.5rem;
 
-            @include lg {
-                display: flex !important;
-                gap: 1.5rem;
+            a {
+                display: flex;
+                gap: .7rem;
+                align-items: center;
 
-                #details-link {
-                    display: none;
+                p {
+                    margin: 0;
                 }
             }
         }
@@ -39,39 +43,10 @@ header {
             }
         }
 
-        .btn-switch {
-            @include lg {
-                display: block !important;
-                justify-self: end;
-            }
-        }
-
         .account-buttons {
             @include lg {
                 display: flex !important;
                 gap: 1rem;
-            }
-
-            .btn-gray {
-            }
-
-            .profile-thumb-a {
-                width: 44px;
-                height: 44px;
-                overflow: hidden;
-                border-radius: 999px;
-                display: none;
-
-                @include lg {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .profile-thumb {
-                    font-size: 24px;
-                    align-items: center;
-                }
             }
         }
     }

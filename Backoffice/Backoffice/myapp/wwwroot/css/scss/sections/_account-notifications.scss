@@ -17,19 +17,18 @@
         .account-notifications-forms {
             display: flex;
             flex-direction: column;
-            margin-top: 4rem;
-
-            @include lg {
-                align-self: start;
-                margin-top: 0;
-            }
+            align-self: start;
 
             input {
                 max-width: 420px;
                 margin-bottom: 2rem;
             }
 
+            .newsletter-switch-div {
+            }
+
             p {
+                color: $theme;
                 font-weight: 700;
             }
 

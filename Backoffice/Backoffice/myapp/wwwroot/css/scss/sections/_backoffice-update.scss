@@ -1,0 +1,79 @@
+.backoffice-update {
+    @include lg {
+        margin-top: 5rem;
+    }
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        h3 {
+            margin-bottom: 2rem;
+        }
+
+        .status-message {
+            align-self: center;
+        }
+
+        .create-form {
+            display: grid;
+            grid-template-columns: 1fr;
+            justify-content: center;
+            max-width: 530px;
+            min-width: 280px;
+            row-gap: 1rem;
+
+            @include md {
+                width: 80%;
+            }
+
+            .checkbox-div {
+                display: flex;
+                align-items: center;
+                gap: .6rem;
+            }
+
+            .input-div {
+                display: grid;
+                grid-template-columns: auto;
+                grid-template-areas: "label " "input " "span ";
+
+                @include md {
+                }
+
+                span {
+                    grid-area: span;
+                    text-align: end;
+                    height: 26px;
+                }
+
+                input {
+                    width: 100%;
+                    grid-area: input;
+                }
+
+                label {
+                    grid-area: label;
+                }
+
+                .validation-message {
+                    color: $danger;
+                }
+            }
+
+            button {
+                margin-top: 2rem;
+            }
+        }
+
+        @include md {
+            .content-box {
+                min-width: 526px;
+                display: flex;
+                align-items: center;
+                flex-direction: column;
+            }
+        }
+    }
+}
